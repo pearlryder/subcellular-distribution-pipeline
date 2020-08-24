@@ -1,0 +1,38 @@
+version: '3.3'
+services:
+  db:
+    image: "postgres:11.5"
+    container_name: "db"
+    volumes:
+      - "dbdata:/var/lib/postgresql/data"
+      - ./init-tables.sh:/docker-entrypoint-initdb.d/init-tables.sh
+    env_file:
+      - env_file
+    ports:
+      - '3306:3306'
+    networks:
+      - nw
+  jupyter-server:
+    container_name: "jupyter"
+    build: ./jupyter
+    volumes:
+      - "notebooks:/jupyter_notebooks"
+      - "output:/output"
+      - "data:/image-data"
+
+    ports:
+      - 8888:8888
+    env_file:
+      - env_file
+    networks:
+      - nw
+    depends_on:
+      - db
+networks:
+  nw:
+    driver: bridge
+volumes:
+  dbdata:
+  notebooks:
+  data:
+  output:
