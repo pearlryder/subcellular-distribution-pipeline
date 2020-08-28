@@ -263,8 +263,12 @@ def add_distance_columns(structure_1, structure_2, database_name):
 
     cur.execute(query)
     conn.commit()
+    cur.close()
+    conn.close()
 
     # create indexes on tables to speed up distance measurements later
+    conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
+    cur = conn.cursor()
 
     structures = [structure_1, structure_2]
 
@@ -317,111 +321,12 @@ def test_data_db(image_name, structure, database_name):
 
     return processed_bool
 
-def measure_distance_update_db(structure_1_data_list, structure_1, structure_2, number_centroid_measure, database_name):
-
-    import numpy as np
+def select_null_ids(structure_1, distance_col, database_name):
     import psycopg2
     from psycopg2 import sql
     import os
 
-    distance_col = 'distance_to_' + structure_2
-
-    for structure_1_data in structure_1_data_list:
-        # unpack structure 1 data
-        image_name = structure_1_data[0]
-        structure_1_id = structure_1_data[1]
-        centroid_1 = np.array(structure_1_data[2])
-        coords_1 = structure_1_data[3]
-
-        # get all structure 2 centroids for that image
-        conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
-        cur = conn.cursor()
-
-        structure_2_centroid_query = sql.SQL("""SELECT id, centroid
-                                    FROM {structure_2}
-                                    WHERE name = %(image_name)s""").format(
-                            structure_2=sql.Identifier(structure_2))
-
-        cur.execute(structure_2_centroid_query, {'image_name': image_name})
-
-        structure_2_centroid_data = cur.fetchall()
-
-        cur.close()
-        conn.close()
-
-        # measure centroid to centroid distances
-        closest_structure_2 = centroid_measurements_closest_structure_2(centroid_1, structure_2_centroid_data, number_centroid_measure)
-
-        # now get the coordinates for those structure 2 ids
-        structure_2_coords_query = sql.SQL("SELECT id, coordinates FROM {structure_2} WHERE id IN %(id)s;").format(
-                                            structure_2=sql.Identifier(structure_2))
-
-        conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
-        cur = conn.cursor()
-
-        cur.execute(structure_2_coords_query, {'id': closest_structure_2})
-
-        structure_2_coord_data = cur.fetchall()
-        cur.close()
-        conn.close()
-
-        # prepare the coordinates for object 1 for distance measurements
-
-        surface_coords_1 = extract_surface_coordinates(coords_1)
-        surface_coords_1 = [np.array(coord) for coord in surface_coords_1]
-
-        closest_structure_2_distance = 100000
-        closest_structure_2_id = None
-
-        # now iterate over structure 2 coords
-        for id_coord_row in structure_2_coord_data:
-            structure_2_id = id_coord_row[0]
-            coords_2 = id_coord_row[1]
-
-            surface_coords_2 = extract_surface_coordinates(coords_2)
-            surface_coords_2 = [np.array(coord) for coord in surface_coords_2]
-
-            distance_to_structure_1 = minimum_distance(surface_coords_1, surface_coords_2)
-
-            if distance_to_structure_1 < closest_structure_2_distance:
-                closest_structure_2_distance = distance_to_structure_1
-                closest_structure_2_id = structure_2_id
-
-        # now update the database
-        update_distance_query = sql.SQL("""UPDATE {structure_1}
-                                            SET {distance_col} = %(closest_structure_2_distance)s,
-                                            {structure_2_id} = %(closest_structure_2_id)s
-                                            WHERE id = %(structure_1_id)s;""").format(
-                                    structure_1=sql.Identifier(structure_1),
-                                    distance_col=sql.Identifier(distance_col),
-                                    structure_2_id=sql.Identifier(structure_2 + '_id'))
-
-        conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
-        cur = conn.cursor()
-
-        cur.execute(update_distance_query, {'closest_structure_2_distance': closest_structure_2_distance,
-                                           'closest_structure_2_id': closest_structure_2_id,
-                                            'structure_1_id': structure_1_id})
-        conn.commit()
-
-        cur.close()
-        conn.close()
-
-    return None
-
-
-def measure_distance_by_obj(structure_1, structure_2, parallel_processing_bool, number_centroid_measure, database_name):
-    import psycopg2
-    from psycopg2 import sql
-    import multiprocessing as mp
-    import os
-
-    # first get all structure 1 objects that have not been measured from the database
-
-    distance_col = 'distance_to_' + structure_2
-
-    # first get all null values
-    structure_1_data_query = sql.SQL("""SELECT name, id, centroid, coordinates
+    structure_1_data_query = sql.SQL("""SELECT id
                             FROM {structure_1}
                             WHERE {distance_col} IS NULL;""").format(
                     structure_1=sql.Identifier(structure_1),
@@ -433,53 +338,188 @@ def measure_distance_by_obj(structure_1, structure_2, parallel_processing_bool, 
     cur.execute(structure_1_data_query)
     structure_1_data_all = cur.fetchall()
 
+    structure_1_id_ls = [id_tuple[0] for id_tuple in structure_1_data_all]
+
     cur.close()
     conn.close()
 
-    null_count = len(structure_1_data_all)
+    return structure_1_id_ls
 
-    if null_count == 0:
-        print('All object distances between {structure_1} and {structure_2} have been measured'.format(
-                                        structure_1=structure_1,
-                                        structure_2=structure_2))
 
+def measure_distances(structure_measurement_tuple, parallel_processing_bool, database_name, number_centroid_measure):
+
+    """ This function measures the distances between two structures, defined within a tuple with form
+    (structure_1, structure_2)
+
+    If parallel_processing_bool is True, then the distances will be measured using parallel processing
+    Otherwise, one object is measured at a time
+
+    The number_centroid_measure will determine how many structure 2 objects are measured using surface to surface coordinates
+
+    The database will be updated for each object
+
+    Returns None
+    """
+
+    # unpack the structure_measurement_tuple
+    structure_1 = structure_measurement_tuple[0]
+    structure_2 = structure_measurement_tuple[1]
+
+    # add distance columns to the database and create database indexes
+    add_distance_columns(structure_1, structure_2, database_name)
+
+    # get all structure 1 ids that haven't been measured
+    distance_col = 'distance_to_' + structure_2
+
+    structure_1_id_ls = select_null_ids(structure_1, distance_col, database_name)
+
+    # code to process using parallel processing
+    if parallel_processing_bool:
+        print('Measuring distances with parallel processing')
+        import multiprocessing as mp
+
+        cpu_count = mp.cpu_count() - 1
+
+        argument_tuples = []
+        for structure_1_id in structure_1_id_ls:
+            argument_tuple = (structure_1_id, structure_1, structure_2, number_centroid_measure, database_name)
+
+            argument_tuples.append(argument_tuple)
+
+        pool = mp.Pool(cpu_count)
+        result = pool.starmap(measure_distance_by_obj, argument_tuples)
+
+    # otherwise iterate over list and process one id at a time
     else:
-        if not parallel_processing_bool:
-            print('Measuring distances between {structure_1} and {structure_2} without parallel processing'.format(
-                                        structure_1=structure_1,
-                                        structure_2=structure_2))
-            measure_distance_update_db(structure_1_data_all, structure_1, structure_2, number_centroid_measure, database_name, db_user, db_password, db_host)
+        print('Measuring distances without parallel processing')
 
-        else:
-            print('Measuring distances between {structure_1} and {structure_2} with parallel processing'.format(
-                                        structure_1=structure_1,
-                                        structure_2=structure_2))
-            # get cpu count and estimate the number of objects each processor should process
-            cpu_count = mp.cpu_count() - 1
-            number_per_processor = round(null_count/cpu_count) + 1
+        for structure_1_id in structure_1_id_ls:
+            measure_distance_by_obj(structure_1_id, structure_1, structure_2, number_centroid_measure, database_name)
 
-            # divide the structure_1_data list into smaller pieces
-            structure_1_chunks = chunk_list(structure_1_data_all, number_per_processor)
-
-            # make a list of tuples containing these different subset lists
-            argument_tuples = []
-            for subset_list in structure_1_chunks:
-                argument_tuple = (subset_list, structure_1, structure_2, number_centroid_measure, database_name, db_user, db_password, db_host)
-                argument_tuples.append(argument_tuple)
-
-            pool = mp.Pool(cpu_count)
-            result = pool.starmap(measure_distance_update_db, argument_tuples)
     return None
 
-def chunk_list(lst, n):
-    """Yield successive n-sized chunks from lst."""
 
-    chunks = []
+def measure_distance_by_obj(obj_id, structure_1, structure_2, number_centroid_measure, database_name):
 
-    for i in range(0, len(lst), n):
-        chunks.append(lst[i:i + n])
+    """ This function takes an object id from the structure_1 table. It will measure the distance from that object
+    to the closest structure_2 object.
 
-    return chunks
+    The number_centroid_measure is the number of structure_2 objects to use to perform surface to surface distance measurements for this structure 1 object
+
+    It then updates the database with the closest structure_2 id
+
+    Returns None
+
+    """
+
+    # import packages
+    import psycopg2
+    from psycopg2 import sql
+    import os
+    import numpy as np
+
+    # name the distance column
+    distance_col = 'distance_to_' + structure_2
+
+    # first get all null values
+    structure_1_data_query = sql.SQL("""SELECT name, id, centroid, coordinates
+                            FROM {structure_1}
+                            WHERE {distance_col} IS NULL
+                            AND id = %(obj_id)s;""").format(
+                    structure_1=sql.Identifier(structure_1),
+                    distance_col=sql.Identifier(distance_col))
+
+    conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
+    cur = conn.cursor()
+
+    cur.execute(structure_1_data_query, {'obj_id': obj_id})
+    structure_1_data = cur.fetchall()[0]
+
+    cur.close()
+    conn.close()
+
+    # unpack the structure 1 data
+
+    image_name = structure_1_data[0]
+    structure_1_id = structure_1_data[1]
+    centroid_1 = np.array(structure_1_data[2])
+    coords_1 = structure_1_data[3]
+
+    # get all structure 2 centroids for that image
+    conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
+    cur = conn.cursor()
+
+    structure_2_centroid_query = sql.SQL("""SELECT id, centroid
+                                FROM {structure_2}
+                                WHERE name = %(image_name)s""").format(
+                        structure_2=sql.Identifier(structure_2))
+
+    cur.execute(structure_2_centroid_query, {'image_name': image_name})
+
+    structure_2_centroid_data = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    # measure centroid to centroid distances
+    closest_structure_2 = centroid_measurements_closest_structure_2(centroid_1, structure_2_centroid_data, number_centroid_measure)
+
+    # now get the surface coordinates for those structure 2 ids
+    structure_2_coords_query = sql.SQL("SELECT id, coordinates FROM {structure_2} WHERE id IN %(id)s;").format(
+                                        structure_2=sql.Identifier(structure_2))
+
+    conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
+    cur = conn.cursor()
+
+    cur.execute(structure_2_coords_query, {'id': closest_structure_2})
+
+    structure_2_coord_data = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    # prepare the coordinates for object 1 for distance measurements
+
+    surface_coords_1 = extract_surface_coordinates(coords_1)
+    surface_coords_1 = [np.array(coord) for coord in surface_coords_1]
+
+    closest_structure_2_distance = 100000
+    closest_structure_2_id = None
+
+    # now iterate over structure 2 coords
+    for id_coord_row in structure_2_coord_data:
+        structure_2_id = id_coord_row[0]
+        coords_2 = id_coord_row[1]
+
+        surface_coords_2 = extract_surface_coordinates(coords_2)
+        surface_coords_2 = [np.array(coord) for coord in surface_coords_2]
+
+        distance_to_structure_1 = minimum_distance(surface_coords_1, surface_coords_2)
+
+        if distance_to_structure_1 < closest_structure_2_distance:
+            closest_structure_2_distance = distance_to_structure_1
+            closest_structure_2_id = structure_2_id
+
+    # now update the database
+    update_distance_query = sql.SQL("""UPDATE {structure_1}
+                                        SET {distance_col} = %(closest_structure_2_distance)s,
+                                        {structure_2_id} = %(closest_structure_2_id)s
+                                        WHERE id = %(structure_1_id)s;""").format(
+                                structure_1=sql.Identifier(structure_1),
+                                distance_col=sql.Identifier(distance_col),
+                                structure_2_id=sql.Identifier(structure_2 + '_id'))
+
+    conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
+    cur = conn.cursor()
+
+    cur.execute(update_distance_query, {'closest_structure_2_distance': closest_structure_2_distance,
+                                       'closest_structure_2_id': closest_structure_2_id,
+                                        'structure_1_id': structure_1_id})
+    conn.commit()
+
+    cur.close()
+    conn.close()
+
+    return None
 
 def delete_data_db(image_name, structure, database_name):
     """Inputs: string describing the name of an image and a string describing a subcellular structure in that image
@@ -510,6 +550,13 @@ def delete_data_db(image_name, structure, database_name):
 
 
 def calculate_fraction_rna(structure_1, structure_2, image_name_column, distance_threshold, granule_bool, granule_threshold, database_name):
+    """ This function calculates the fraction of total structure 1 intensity at each distance from structure 2
+
+    If granule_bool = True, then the function will calculate the % of structure 1 in granules (objects containing > granule_threshold # of objects) relative to distance from structure_2
+
+    Returns a dataframe containing the a column with the distance from structure_2 and the corresponding % structure_1 (and optionally, % structure_1 in granules)
+    """
+
     from psycopg2 import sql
     import psycopg2
     import pandas as pd
@@ -536,7 +583,7 @@ def calculate_fraction_rna(structure_1, structure_2, image_name_column, distance
                         distance_col =sql.Identifier(distance_col),
                         name = sql.Identifier(image_name_column))
 
-    conn = psycopg2.connect(database=database_name, user=db_user, password=db_password, host=db_host)
+    conn = psycopg2.connect('postgresql://'+os.environ['POSTGRES_USER']+':'+os.environ['POSTGRES_PASSWORD']+'@'+"db"+':'+'5432'+'/'+database_name)
     cur = conn.cursor()
 
     cur.execute(total_structure_1_sql, {'max_distance':distance_threshold})
@@ -768,7 +815,7 @@ def calculate_distributions_by_image(distance_threshold, granule_bool, granule_t
         distances = np.arange(0, distance_threshold, step_size)
         distances = np.append(distances, distance_threshold)
 
-        structure_1_distribution_dict = calculate_percent_distributions(image_name, image_name_column, structure_1, structure_2, granule_bool, granule_threshold, distances, database_name, db_user, db_password, db_host)
+        structure_1_distribution_dict = calculate_percent_distributions(image_name, image_name_column, structure_1, structure_2, granule_bool, granule_threshold, distances, database_name)
 
         structure_1_distribution_dict.update(image_data_dict)
 
