@@ -6,13 +6,52 @@ The SubcellularDistribution pipeline is implemented using Docker in order to fac
 Once you have installed Docker, we recommend adjusting the memory resources available to your Docker containers. On a Mac, this setting is available in the "Preferences" interface under "Resources". On the Windows Docker Desktop app, you can adjust this in the Advanced tab under "Settings". We suggest starting with a minimum of 5 GB of memory available.
 
 
-## Step 2: Download test data from FigShare
+## Step 2: Test git and install if necessary
+You will use git to download the SubcellularDistribution pipeline code from GitHub. In order to test if you have git installed already, open up a terminal window and type:
+
+```bash
+git --version
+```
+
+If you see an error message that you don't have git, follow the instructions to install it [here for Mac](https://www.atlassian.com/git/tutorials/install-git#mac-os-x) or [here for PC](https://www.atlassian.com/git/tutorials/install-git#windows).
+
+## Step 3: Download the SubcellularDistribution pipeline from GitHub
+First, you should create a folder to contain your projects. We recommend something like a Projects folder within your home directory. Once you have created this folder, navigate to it using the terminal as follows:
+
+Mac:
+```bash
+cd ~/Projects
+```
+
+Windows:
+```bash
+cd C:/Projects
+```
+
+Once you are in this directory, download the SubcellularDistribution pipeline code from GitHub using the command:
+
+```bash
+git clone https://github.com/pearlryder/subcellular-distribution-pipeline
+```
+
+Now you can navigate into this window using ```cd subcellular-distribution-pipeline```. You can test if the files have downloaded using ```ls```. You should see a printout to your terminal like this: ![terminal-git-clone](git-clone-ls.png).
+
+## Step 4: Start the SubcellularDistribution pipeline using docker-compose
+
+
+
+
+-- check to see if data is the
+
+
+
+
+Download test data from FigShare
 If you would like to test the code using our test dataset, you can download the dataset at [FigShare](https://figshare.com/projects/SubcellularDistribution_pipeline/86732). You will need to download the "centrosomes" and "rna" folders as well as the "raw-data-metadata.csv" file located within the "Supporting data for SubcellularDistribution Pipeline" dataset.
 
 Note that you'll need to reorganize this data (detailed below), as FigShare does not allow us to share it with you in the nested folders required for the pipeline.
 
-Once you've downloaded the data, create a folder named "image-data". Add both the centrosomes and rna folders to this image-data folder. Then, within the "centrosomes" folder, create a new folder named "raw-data". Move all of the images to this folder. Repeat this process for the "rna" folder. When you're done, your folder structure should look ![like this](image-data-folder-structure.png).
-
+Once you've downloaded the data, create a folder named "image-data". Add both the centrosomes and rna folders to this image-data folder. Then, within the "centrosomes" folder, create a new folder named "raw-data". Move all of the images to this folder. Repeat this process for the "rna" folder. When you're done, your folder structure should look like this: ![image-data-folder-structure.png](image-data-folder-structure.png).
 
 
 
