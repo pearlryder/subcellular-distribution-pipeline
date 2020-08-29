@@ -322,20 +322,21 @@ exit
 Using the SubcellularDistribution pipeline requires some interaction with your operating system via the terminal. Here are a few useful commands that you may find helpful.
 
 ## Useful Linux commands
-The (Software Carpentry)[http://swcarpentry.github.io/shell-novice/] has a nice introduction to using the Unix shell that you may find helpful.
+The [Software Carpentry](http://swcarpentry.github.io/shell-novice/) has a nice introduction to using the Unix shell that you may find helpful.
 ```bash
 pwd # print working directory
 cd FILEPATH # change directory
 cd ~ # change to the home directory
+ls # list the contents of the current directory
 rm FILEPATH/FILENAME # delete the object at the filepath (or a filename within the working directory). Use with caution!!
 rm -r FILEPATH/FOLDER # delete an entire folder. Use with caution!!
 mkdir FILEPATH/NEW_DIRECTORY  # create a new folder at the specified filepath (or in the current working folder)
 ```
 
-Another feature we find very helpful is tab completion for filepaths. You can partially type a filepath and then press tab and the shell will complete the path. You can (read more here)[https://en.wikipedia.org/wiki/Command-line_completion].
+Another feature we find very helpful is tab completion for filepaths. You can partially type a filepath and then press tab and the shell will complete the path. You can [read more here](https://en.wikipedia.org/wiki/Command-line_completion).
 
 ## Useful Docker commands
-You can get more information about using Docker via their (official documentation)[https://docs.docker.com/].
+You can get more information about using Docker via their [official documentation](https://docs.docker.com/).
 
 ```bash
 docker-compose up # start the Docker containers for the database and Jupyter notebooks
