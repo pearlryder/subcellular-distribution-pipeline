@@ -11,4 +11,4 @@ You should also add a .csv file containing the metadata for your images (e.g. de
 You can download sample "centrosomes" and "rna" images to test this pipeline at [FigShare](https://figshare.com/projects/SubcellularDistribution_pipeline/86732). The example metadata table is located in the "Supporting data for SubcellularDistribution Pipeline" dataset.
 
 Here is an example of the this folder's file structure:
-![image-data-folder-structure.png](../documentation/image-data-folder-structure.png)
+![image-data-folder-structure.png](.../documentation/image-data-folder-structure.png)
