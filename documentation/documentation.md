@@ -28,6 +28,8 @@ Windows:
 cd C:/Projects
 ```
 
+Note that if you are on a Windows machine, your filepaths will have a `C:/` instead of `~/`. For simplicity, we will write commands in the following directions using the Unix form. You can replace the `~` with `C:` if you're working on a Windows machine.
+
 Once you are in this directory, download the SubcellularDistribution pipeline code from GitHub using the command:
 
 ```bash
@@ -293,7 +295,7 @@ We use the postgres
 [pg_dump utility](https://www.postgresql.org/docs/9.1/app-pgdump.html) to back up the database. As a default, our directions compress the backup file using [gzip](https://www.gzip.org/). First, navigate to the folder where you'd like your database backups to be stored.
 
 ```bash
-cd ~/Projects/subcellular-distribution-pipeline/output/db_backups
+cd ~/Projects/subcellular-distribution-pipeline/output/db_backups # for Mac
 ```
 
 Then run the pg_dump utility in your Docker db container:
