@@ -36,152 +36,64 @@ git clone https://github.com/pearlryder/subcellular-distribution-pipeline
 
 Now you can navigate into this window using ```cd subcellular-distribution-pipeline```. You can test if the files have downloaded using ```ls```. You should see a printout to your terminal like this: ![terminal-git-clone](git-clone-ls.png).
 
-## Step 4: Start the SubcellularDistribution pipeline using docker-compose
-
-
-
-
--- check to see if data is the
-
-
-
-
-Download test data from FigShare
+## Step 4: Download test data from FigShare
 If you would like to test the code using our test dataset, you can download the dataset at [FigShare](https://figshare.com/projects/SubcellularDistribution_pipeline/86732). You will need to download the "centrosomes" and "rna" folders as well as the "raw-data-metadata.csv" file located within the "Supporting data for SubcellularDistribution Pipeline" dataset.
 
 Note that you'll need to reorganize this data (detailed below), as FigShare does not allow us to share it with you in the nested folders required for the pipeline.
 
-Once you've downloaded the data, create a folder named "image-data". Add both the centrosomes and rna folders to this image-data folder. Then, within the "centrosomes" folder, create a new folder named "raw-data". Move all of the images to this folder. Repeat this process for the "rna" folder. When you're done, your folder structure should look like this: ![image-data-folder-structure.png](image-data-folder-structure.png).
+Once you've downloaded the data, navigate into your folder that contains the subcellular distribution code that you created in the previous step using git clone. Open the "jupyter" folder and then the "image-data" folder. Add the "raw-data-metadata.csv" file to the "image-data" folder. Then create two empty folders inside the image-data folder named "centrosomes" and "rna". Then, within the "centrosomes" folder, create a new folder named "raw-data". Move all of the images to this folder. Repeat this process for the "rna" folder. When you're done, the folder structure in your image-data folder should look like this: ![image-data-folder-structure.png](image-data-folder-structure.png).
 
+If you are analyzing your data, then you can create folders to hold images for your structures of interest. Within the folder for each subcellular structure of interest, create a "raw-data" folder that has your single channel .tif files for that structure. In general, avoid naming structures with upper-case letters, numbers, or special characters - these don't play well with the database that you'll use later. Each structure folder should contain two folders, one for the raw data and one for the segmentations.
 
+The raw-data-metadata.csv file contains details for each image about what biological condition it is from (e.g. which rna type was imaged or what genotype the images are from). This approach allows you to combine images from multiple replicates and conditions into the same folder, so you can be confident that you're applying the same process to each biological condition.
 
+## Step 5: Start the SubcellularDistribution pipeline using docker-compose
+
+Once again, open a terminal window. Navigate to the subcellular-distribution-pipeline folder that you created in Step 3 (`cd ~/Projects/subcellular-distribution-pipeline` on a Mac or `cd C:/Projects/subcellular-distribution-pipeline` on Windows). Ensure that you're in the expected folder using the command ```pwd``` (print working directory). Next, you can initialize the SubcellularDistribution pipeline app using the command:
+
+```bash
+docker-compose up
+```
+
+This command creates a Docker container for the database, a container for running Python code and Jupyter notebooks, and a network bridge between the two containers so that they can interact with each other. When you run the docker-compose up command, you will see a printout to your terminal that contains logs for the container running the Jupyter notebooks. This will include a website that you can copy-paste into your browser in order to access the Jupyter notebooks in your computer. For example, the link is the last line in this image: ![jupyter-link](jupyter-link.png).
+
+Copy-paste that link into a browser window, which will bring up the Jupyter notebook interface: ![jupyter-notebooks](jupyter-notebooks.png)
+
+You're now ready to start processing data using the SubcellularDistribution pipeline!
 
 
 # get into container - bash
-
 ```bash
 docker exec -it jupyter bash
 ```
 
 # postgres into database
 ```bash
-docker exec -it db psql -U username demo
+docker exec -it db psql -U username demo | gzip > demo.gz
 ```
 
-
-*We assume that you will need to install software packages necessary for using the Allen Institute Cell Segmenter and present an abridged version of their installation process. See [their website](https://github.com/AllenInstitute/aics-segmentation) for up-to-date installation instructions.*
-
-## Step 1: Install conda and the Allen Institute Cell Segmenter
-#### 1.1 Anaconda installation
-We use conda to manage the installation of python. You can download and install the latest version of Anaconda at [the Anaconda website](https://www.anaconda.com/). You'll note two versions are available - Anaconda is a full installation pre-loaded with many commonly used packages for data science, whereas miniconda is a stripped down version that saves on disk space. If you have the space, we recommend installing Anaconda to reduce the number of packages you need to load manually. Once you've installed conda, you can test if conda is active by typing the following command into your terminal window.
-
-```bash
-conda info
-```
-
-It's also a good idea to update your conda once you've installed it using `conda update --all`. In general, grey-blocked text indicates commands for the terminal.
-
-#### 1.2 Test your pip installer
-[pip](https://pip.pypa.io/en/stable/) is a package installer for Python. You can think of packages as discrete blocks of Python code that do specific tasks. Make sure you have pip installed by running
-
-```bash
-pip show pip
-```
-
-If any warnings appear when you run the command above, follow the screen instructions to update your pip installer.
-
-#### 1.3 Install git
-Git is a system for tracking changes to versions of code. You can use git to track the changes to  your own code (recommended) and to manage accessing the code for this pipeline and the Allen Institute Cell Segmenter. Check your own git installation:
-
-```bash
-git --version
-```
-
-If you're missing git, you can follow [this tutorial](https://www.atlassian.com/git/tutorials/install-git) for installation.
-
-#### 1.4 Create a conda environment for the SubcellularDistribution pipeline
-Create a new conda environment. This environment will contain all the Python packages necessary to segment images using the Allen Cell Segmenter. A separate environment will be used to run the SubcellularDistribution code. By using separate environments to run different code, we can avoid conflicts between packages (for example, our segmentation code requires a version of a package that is in conflict with code needed to process images, so we run the respective code from different environments).
-
-```bash
-conda create -n segmentation python=3.7 jupyter
-conda create -n pipeline python=3.7 numpy psycopg2 seaborn postgresql==11.2 jupyter scikit-image
-```
+docker exec -it db psql -U [POSTGRESQL_USER] [POSTGRESQL_DATABASE] | gzip > backup.gz
+docker exec -it db psql -U username demo | gzip > demo.gz
 
 
-#### 1.5 Install packages into the segmentation environment
-First, you'll want to activate your conda environment:
+docker exec db /usr/bin/pg_dump -U username
 
-```bash
-conda activate segmentation
-```
 
-Next, run the following commands to install the Allen Cell Segmenter and a package for interactive visualization of data.
 
-```bash
-conda install -c conda-forge opencv
-pip install itkwidgets==0.14.0
-pip install aicssegmentation==0.01.17
-```
 
-#### 1.6 Download the Allen  Cell Segmenter to a local folder
-We've found that installing the cell segmenter using pip as described above is the most error-free way of installation for using the batch processor. However, it can be useful to download the cell segmenter from github in order to access their Jupyter notebooks and modify batch processing scripts locally. The following code creates a folder in your home directory named Projects and then downloads the Allen Cell Segmenter into that folder.
 
-```bash
-mkdir ~/Projects
-cd ~/Projects
-git clone https://github.com/AllenInstitute/aics-segmentation.git
-cd ~/Projects/aics-segmentation
-```
-
-#### 1.7 Test Allen Institute Cell Segmenter installation
-Finally, you can test to see if your installation has worked by starting Jupyter notebook and opening the test_viewer.ipynb notebook.
-
-```bash
-conda activate segmentation
-cd ~/Projects/aics-segmentation/lookup_table_demo
-jupyter notebook
-```
-Use the "Run" button to advance through the cells. You can use the Allen Cell Segmenter to segment your objects of interest. We refer to their [excellent tutorials and documentation](https://github.com/AllenInstitute/aics-ml-segmentation/blob/master/docs/demo_1.md) for how to proceed. Your goal will be to have a folder of single-channel tif files containing the original images for your structure of interest and a corresponding folder of segmentations for those same images.
-
-Note that we also provide optimized Jupyter notebooks and batch processing code for segmenting single molecule FISH and centrosome fluorescence images that work well for our images of *Drosophila* embryos.
-
-#### 1.8 Download SubcellularDistribution pipeline code
-You can download the code associated with the SubcellularDistribution pipeline from GitHub. The following terminal commands assume that you made a ~/Projects directory in step 1.6. You may choose to change this filepath.
-
-```bash
-cd ~/Projects
-git clone https://github.com/pearlryder/subcellular-distribution-pipeline
-cd ~/Projects/subcellular-distribution-pipeline
-```
-
-#### 1.9 Download test dataset
-We provide a test dataset via FigShare. Visit [FigShare](https://figshare.com/projects/SubcellularDistribution_pipeline/86732) to download the images associated with this pipeline. Each image contains an RNA channel (channel 1) and a centrosome channel (channel 2). You can use Fiji (see below) to separate these images into single channel tifs as described in Step 2.
-
-#### 1.10 Download Fiji and Atom text editor
-We recommend using [Fiji](https://fiji.sc/) to visualize your images and segmentations. If you don't already have it, you'll want to download and install it.
-
-If you don't have a preferred text editor, you may want to download and install the [Atom editor](https://atom.io/). We find that it's user friendly and makes editing code more straightforward than using the pre-installed text editor.
+# Processing Data
 
 ## Step 2: Organize data and segment images
-For this pipeline, we recommend the following organization for your data. One directory contains a folder for each subcellular structure of interest. We recommend naming your single molecule FISH data "rna." In general, avoid naming structures with upper-case letters, numbers, or special characters - these don't play well with the database that you'll use later. Each structure folder should contain two folders, one for the raw data and one for the segmentations.
-
-Within the folder for each subcellular structure of interest, you need to create two sub-folders, one named raw-data and and one named segmentations. Each of these folders contain single-channel .tif files for the structures of interest. Split the provided original images from the online repository into two channels. Save channel 1 (red; rna) to the raw-data folder within the rna folder. Create an empty "segmentations" folder within this "rna" folder. Next save the channel 2 tifs to the raw-data folder within the "centrosomes" folder and create the empty segmentations folder. An ImageJ macro can be helpful for converting from multi-channel formats into single-channel tifs and saving them to the raw-data folder for you automatically. You will generate segmentations using the Allen Cell Segmenter).
-
-You likely want to use our pipeline to compare two (or more) biological conditions. We recommend creating a key for yourself to keep track of the associated experimental conditions for each image (we provide an example, raw-data-metadata.csv). This approach allows you to combine images from multiple replicates and conditions into the same folder, so you can be confident that you're applying the same process to each biological condition.
-
-As you'll see in their tutorials, the Allen Cell Segmenter approach provides Jupyter notebooks called "playgrounds" to interactively visualize your segmentation workflow and optimize the parameters for your workflow. We provide two playgrounds for you to use with our test data: one optimized for segmentation of RNA (smFISH signals, in particular) and one optimized for segmentation of centrosomes. If your smFISH signals are similar to ours, you may find starting with our workflow helpful.
 
 #### 2.1 Optimize parameters using Jupyter notebook playgrounds
-For the purpose of this documentation, we'll walk through the process of segmenting smFISH signals. The process is the same for segmenting the centrosome data in our test dataset, you'll just need to use the corresponding Jupyter notebooks and batch processing scripts. If you have a different structure, you can use the [lookup table](https://www.allencell.org/segmenter.html) provided by the AllenInstitute to determine the best starting point for your segmentation.
+For the purpose of this documentation, we'll walk through the process of segmenting smFISH signals. The process is the same for segmenting the centrosome data in our test dataset, you'll just need to use the corresponding Jupyter notebooks and batch processing scripts. If you have a different structure, you can use the [lookup table](https://www.allencell.org/segmenter.html) provided by the AllenInstitute to determine the best starting point for your segmentation. We have provided these playground lookup tables in the "all_structure_playgrounds" folder inside of the segmentation folder.
 
-Start by opening the playground_rna.ipynb Jupyter notebook.
+Start by opening the playground_rna.ipynb Jupyter notebook. In the Jupyter notebook webpage, navigate to the segmentation folder. There you can open the `playground_rna.ipynb` notebook.
 
-```bash
-conda activate segmentation
-cd ~/Projects/subcellular-distribution-pipeline/optimized-segmentation-notebooks
-jupyter notebook
-```
-Step through each cell of the playground_rna Jupyter notebook. These notebooks are interactive and allow you to visualize how each step of the workflow contributes to the final segmentation. We encourage you to adjust parameters and see how the output changes. For example, if the gaussian smoothing sigma starts at 1, try 0.1 and 5 to see how these changes affect the smoothing process. You can save final segmentations using the final cell. These will automatically save into a sub-folder named test-segmentations, that is already created for you. You may also want to save intermediate segmentations, such as the bw_extra segmentation from the 3D spot filter. In order to do this, you would replace the variable 'seg' in the final cell with 'bw_extra' and re-name the output name. For example, from:
+Step through each cell of the playground_rna Jupyter notebook. Use the "Run" button to advance through each cell. These notebooks are interactive and allow you to visualize how each step of the workflow contributes to the final segmentation. We encourage you to adjust parameters and see how the output changes. For example, if the gaussian smoothing sigma starts at 1, try 0.1 and 5 to see how these changes affect the smoothing process. You can save final segmentations using the final cell. These will automatically save test segmentations to an output folder in the home directory of the jupyer container.
+
+You may also want to save intermediate segmentations, such as the bw_extra segmentation from the 3D spot filter. In order to do this, you would replace the variable 'seg' in the final cell with 'bw_extra' and re-name the output name. For example, from:
 ```bash
 seg = seg >0
 out=seg.astype(np.uint8)
@@ -197,17 +109,32 @@ out[out>0]=255
 writer = omeTifWriter.OmeTifWriter('test-segmentations/' + FILE_NAME + '_test_rna_bw_extra.tiff')
 writer.save(out)
 ```
-Downloading images is useful, because I've found that I can better assess the quality of segmentation using Fiji. I like to open the original image and a segmentation file in Fiji and then use the Sync Windows function to directly compare the images. For smFISH signals, you want to assess the following questions:
-* Are single molecules of RNA captured?
+Downloading images is useful, because we've found we can better assess the quality of segmentation using Fiji. In order to move data from your Docker container out to your home machine where you can open the image, you can use the Docker cp command. The command below copies data from the jupyter container's output folder to an output folder:
+
+```bash
+docker cp jupyter:/output/ ~/Projects/subcellular-distribution-pipeline/output/
+```
+
+If you need to pull out our test data images from the Docker image, you can copy them to your computer using:
+
+```bash
+docker cp jupyter:/data/ ~/Projects/subcellular-distribution-pipeline/data/
+```
+
+You can open the original image and a segmentation file in [Fiji](https://fiji.sc/) and then use the Sync Windows function to directly compare the images. For your signals, you want to assess the following questions:
+* Are objects of interest included in the segmentation?
 * Is the background appropriately excluded?
-* If you have larger granules, as we do in one of our biological conditions, are those granules segmented appropriately?
+* Are objects of different sizes appropriately segmented?
 
 Note that no segmentation process will ever be perfect. We refer you to this [excellent article](https://blog.cellprofiler.org/2019/10/21/when-to-say-good-enough/) by Beth Cimini, a senior computational biologist in the Imaging Platform led by Anne Carpenter at the Broad Institute, for a philosophical discussion of when to call a workflow "good enough." Remember, you want to robustly quantify the difference between two biological states as accurately as feasible, while recognizing that discovering the "universal truth" of your biological process is impossible.
 
-Continue this process until you're satisfied with the segmentation process. We recommend walking through at least two images from each biological condition to test your workflow before moving to the next step -- batch processing.
+Continue this process until you're satisfied with the segmentation process. We recommend walking through at least two images from each biological condition to test your workflow before moving to the next step - batch processing.
 
 #### 2.2 Batch process image segmentation
-Once we're satisfied with my workflow, we use the Allen Cell Segmenter's batch processing mode to segment our entire dataset. We then review the results of that segmentation for each image in Fiji (or a representative subset of your images if your dataset is really big).
+Once we're satisfied with my workflow, we use Jupyter notebooks to execute batch processing on all of the images for a given structure.
+
+
+the Allen Cell Segmenter's batch processing mode to segment our entire dataset. We then review the results of that segmentation for each image in Fiji (or a representative subset of your images if your dataset is really big).
 
 If you changed the parameters in the Jupyter notebook for RNA segmentation, then you'll first want to update the batch processing file for RNA named "seg_rna.py" and located in the "batch-processing-scripts" folder. Open the file using a text editor. Update the code using copy-paste so that the pre-processing, processing, and post-processing steps reflect the workflow you optimized in step 2.1. [This tutorial](https://www.youtube.com/watch?v=Ynl_Yt9N8p4) may be helpful.
 
@@ -250,42 +177,6 @@ cp ~/Projects/subcellular-distribution-pipeline/batch-processing-scripts/seg_cen
 batch_processing --workflow_name cent --struct_ch 0 --output_dir ~/data/centrosomes/segmentations per_dir --input_dir ~/data/centrosomes/raw-data --data_type .tif
 ```
 
-## Step 3: Set up database server
-#### 3.1 Install postgres
-First, we need to set up a postgres server and database for this experiment. We use one database to contain all of the data for a given experiment, including multiple replicates and different biological conditions that are being compared.
-
-Use conda list to ensure that you have postgresql installed in your pipeline environment:
-```bash
-conda activate pipeline
-conda list
-```
-
-If you don't see `postgresql 11.2` in your list of packages, you can use `conda install -c anaconda postgresql=='11.2'` to install it.
-
-#### 3.2 Initialize a postgres server
-The next step is to create folders for your database server information and a place to hold your collection of databases. You'll be prompted to enter your system password. Be sure to update your username in the commands below. If you're not certain of your username, you can use the whoami command to find out:
-
-```bash
-sudo mkdir -p ~/usr/local/pgsql/data
-sudo chown username ~/usr/local/pgsql/data
-sudo chmod -R 700 ~/usr/local/pgsql/data
-pg_ctl -D ~/usr/local/pgsql/data initdb
-```
-
-If everything works, you'll see a printout to your terminal window indicating the successful initiation of your database cluster. Now you can start your server using the following command. Note that you may need to change the path to your anaconda installation of postgres - the terminal window should have this command printed out. Note this process creates a logfile in your Projects/subcellular-distribution-pipeline directory, which you can use to debug any errors:
-
-``` bash
-~/opt/anaconda3/envs/pipeline/bin/pg_ctl -D ~/usr/local/pgsql/data -l ~/Projects/subcellular-distribution-pipeline/logfile start
-```
-
-#### 3.3 Create a database for your data
-Now we'll create an initial database. This database will be named for your username and is the starting point for creating other databases. We'll first create a database for your username with the createdb command, then create a database called "demo" for the tutorial data.
-
-``` bash
-conda activate pipeline
-createdb
-createdb demo
-```
 
 #### 3.4 Interact with your data using the postgres command line utility
 Finally, you can interact with your databases using SQL commands from a terminal window by activating the postgres command line utility. You may want to open a new terminal window that you use for this purpose exclusively. If you do, you'll need to be sure to activate your conda environment before running the following commands. The first command launches the postgres command line utility, while the second command is an SQL command that connects you to the demo database:
