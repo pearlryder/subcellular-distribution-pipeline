@@ -13,7 +13,7 @@ services:
     networks:
       - nw
   jupyter-server:
-    image: "pearlryder/subcellular-distribution-pipeline:initial"
+    image: "pearlryder/subcellular-distribution-pipeline:2020.08.29"
     container_name: "jupyter"
     build: ./jupyter
     volumes:
