@@ -1,13 +1,30 @@
 # 1. Software installation
 
 ## Step 1.1: Install Docker for your system
-The SubcellularDistribution pipeline is implemented using Docker in order to facilitate installation and reproducibility. Docker creates an isolated system on your computer, akin to a virtual machine. We provide instructions for Docker to recreate this container system across multiple different platforms. Visit [the Docker website](https://www.docker.com/) to download and install the Docker Desktop app for your computer. Follow their installation instructions.
+The SubcellularDistribution pipeline is implemented using Docker in order to facilitate installation and reproducibility. Docker creates an isolated system on your computer, akin to a virtual machine. We provide instructions for Docker to recreate this container system across multiple different platforms. Instructions are provided on the Docker website for [Mac](https://docs.docker.com/docker-for-mac/install/) and [Windows](https://docs.docker.com/docker-for-windows/install/).
 
-Once you have installed Docker, we recommend adjusting the memory resources available to your Docker containers. On a Mac, this setting is available in the "Preferences" interface under "Resources". On the Windows Docker Desktop app, you can adjust this in the Advanced tab under "Settings". We suggest starting with a minimum of 5 GB of memory available.
+Since the Docker installation is a bit trickier on Windows, here we provide a brief overview of the steps required for installation on Windows 10:
+1. Open an Administrator Powershell window by pressing the Windows button + X, then selecting Windows Powershell (Admin) from the menu
+2. Enable Windows Subsytem for Linux WSL 1 using the following command:
+```bash
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+```
+3. Enable the "Virtual Machine Platform" feature:
+```bash
+dism.exe /online /enable-feature /feawsl --set-default-version 2turename:VirtualMachinePlatform /all /norestart
+```
+4. Restart your computer.
+5. Update to the Windows Subsystem for Linux 2 (WSL 2). Make sure that you're running the most up-to-date version of Windows available for your machine prior to trying this code. If you run into an error, you likely either need to update Windows or update your Linux kernel. See [this webpage](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for more info.
+```bash
+wsl --set-default-version 2
+```
+6. Download and install the [Windows installer](https://www.docker.com/get-started)
+
+Once you have installed Docker, you will need to start the application. Once you're on the home screen of the Docker app, we recommend adjusting the memory resources available to your Docker containers. This setting is available in the "Preferences" interface under "Resources". On the Windows Docker Desktop app, you can adjust this in the Advanced tab under "Settings". We suggest starting with a minimum of 5 GB of memory available.
 
 
 ## Step 1.2: Test git and install if necessary
-You will use git to download the SubcellularDistribution pipeline code from GitHub. In order to test if you have git installed already, open up a terminal window and type:
+You will use git to download the SubcellularDistribution pipeline code from GitHub. In order to test if you have git installed already, open up a Windows Powershell or Mac terminal window and type:
 
 ```bash
 git --version
@@ -18,17 +35,11 @@ If you see an error message that you don't have git, follow the instructions to 
 ## Step 1.3: Download the SubcellularDistribution pipeline from GitHub
 First, you should create a folder to contain your projects. We recommend something like a Projects folder within your home directory. Once you have created this folder, navigate to it using the terminal as follows:
 
-Mac:
 ```bash
 cd ~/Projects
 ```
 
-Windows:
-```bash
-cd C:/Projects
-```
-
-Note that if you are on a Windows machine, your filepaths will have a `C:/` instead of `~/`. For simplicity, we will write commands in the following directions using the Unix form. You can replace the `~` with `C:` if you're working on a Windows machine.
+Note that if you are on a Windows machine, your filepaths will have a `C:/` instead of `~/`. However, you can type them in using "~" to represent the home foler. For simplicity, we will write commands in the following directions using the Unix form.
 
 Once you are in this directory, download the SubcellularDistribution pipeline code from GitHub using the command:
 
