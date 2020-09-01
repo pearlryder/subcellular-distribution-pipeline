@@ -13,21 +13,12 @@ services:
     networks:
       - nw
   jupyter-server:
-    image: "pearlryder/subcellular-distribution-pipeline:2020.08.29"
+    image: "pearlryder/subcellular-distribution-pipeline:2020.09.01-2"
     container_name: "jupyter"
     volumes:
       - "notebooks:/jupyter_notebooks"
       - "output:/output"
       - "data:/image-data"
-    deploy:
-      resources:
-        limits:
-          cpus: '10'
-          memory: 5GB
-        reservations:
-          cpus: '1'
-          memory: 1GB
-
     ports:
       - 8888:8888
     env_file:
