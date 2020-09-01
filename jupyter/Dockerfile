@@ -18,7 +18,6 @@ COPY ./image-data .
 # make an output folder
 WORKDIR /output
 
-
 # Switch to directory of jupyter notebooks
 WORKDIR /jupyter_notebooks
 
