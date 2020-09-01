@@ -19,6 +19,14 @@ services:
       - "notebooks:/jupyter_notebooks"
       - "output:/output"
       - "data:/image-data"
+    deploy:
+      resources:
+        limits:
+          cpus: '10'
+          memory: 5GB
+        reservations:
+          cpus: '1'
+          memory: 1GB
 
     ports:
       - 8888:8888
