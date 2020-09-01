@@ -12,7 +12,7 @@ We use [Fiji](https://fiji.sc/) to open and view z-stack .tif images. We recomme
 ## Step 1.2: Install Docker for your system
 The SubcellularDistribution pipeline is implemented using Docker in order to facilitate installation and reproducibility. Docker creates an isolated operating system on your computer, akin to a virtual machine. These isolated environments are called containers. We provide instructions for Docker to recreate this container system across multiple different platforms. Instructions are provided on the Docker website for [Mac](https://docs.docker.com/docker-for-mac/install/) and [Windows](https://docs.docker.com/docker-for-windows/install/).
 
-Once you have installed Docker, you will need to start the application. Once you're on the home screen of the Docker app, we recommend adjusting the memory resources available to your Docker containers. This setting is available in the "Preferences" interface under "Resources". On the Windows Docker Desktop app, you can adjust this in the Advanced tab under "Settings". We suggest starting with a minimum of 5 GB of memory available.
+Once you have installed Docker, you will need to start the application. For those on a Mac, we recommend adjusting the memory resources available to your Docker containers. This setting is available in the "Preferences" interface under "Resources". We recommend starting with 5 GB of memory available. You can also adjust the number of CPUs available in the same interface.
 
 The Docker installation is a bit trickier on Windows. You will need to have  Windows Subsystem for Linux 2 (WSL 2) installed and an up-to-date installation of Windows. Here is a brief overview of the installation process on Windows 10:
 1. Open an Administrator Powershell window by pressing the Windows button + X, then selecting Windows Powershell (Admin) from the menu
@@ -64,18 +64,17 @@ git clone https://github.com/pearlryder/subcellular-distribution-pipeline
 Now you can navigate into this window using ```cd subcellular-distribution-pipeline```. You can test if the files have downloaded using ```ls```. You should see a printout to your terminal like this: ![terminal-git-clone](git-clone-ls.png).
 
 ## Step 1.5: Add data to the "image-data" folder
-If you would like to test the code using our test dataset, you can download the dataset at [FigShare](https://figshare.com/projects/SubcellularDistribution_pipeline/86732). You will need to download the "centrosomes" and "rna" folders as well as the "raw-data-metadata.csv" file located within the "Supporting data for SubcellularDistribution Pipeline" dataset.
+If you would like to test the code using our test dataset, the data is already included in SubcellularDistribution pipeline on Docker. If you need to access it for any reason, you can download it at [FigShare](https://figshare.com/projects/SubcellularDistribution_pipeline/86732). Sample output is available for you to compare your own results on the same website.
 
-Note that you'll need to reorganize this data (detailed below), as FigShare does not allow us to share it with you in the nested folders required for the pipeline.
+If you would like to analyze your own data, you will need to organize it as follows.
 
-Once you've downloaded the data, navigate into your folder that contains the subcellular distribution code that you created in the previous step using git clone. Open the "jupyter" folder and then the "image-data" folder. Create two empty folders inside the image-data folder named "centrosomes" and "rna". Then, within the "centrosomes" folder, create a new folder named "raw-data". Move all of the images to this folder. Repeat this process for the "rna" folder. When you're done, the folder structure in your image-data folder should look like this: ![image-data-folder-structure.png](image-data-folder-structure.png).
+Open the "jupyter" folder and then the "image-data" folder. Create empty folders inside the image-data folder named for the structures that you want to analyze. Within these folders, add a "raw-data" folder holding single channel .tif files for that structure. In general, avoid naming structures with upper-case letters, numbers, or special characters - these don't play well with the database that you'll use later. When you're done, the folder structure in your image-data folder should look like this (although the names of the structures will be different): ![image-data-folder-structure.png](image-data-folder-structure.png).
 
-If you are analyzing your own data, then you can create folders to hold images for your structures of interest. Within the folder for each subcellular structure of interest, create a "raw-data" folder that has your single channel .tif files for that structure. In general, avoid naming structures with upper-case letters, numbers, or special characters - these don't play well with the database that you'll use later.
-
-If you intend to use the provided Allen Institute Cell Segmenter method for 3D segmentation, then you are done (for those trying out the pipeline with our data, we do provide optimized segmentation workflows) However, you have an option to provide 3D segmentations that you have generated using another program. In that case, simply add a "segmentations" folder within each "structure" folder for these 3D segmented images.
+If you intend to use the provided Allen Institute Cell Segmenter method for 3D segmentation, then you are done (for those trying out the pipeline with our data, we do provide optimized segmentation workflows) However, you have an option to provide 3D segmentations that you have generated using another program. In that case, simply add a "segmentations" folder within each "structure" folder and add the .tif files for your 3D segmentations. They should all have the same name as the corresponding raw-data image.
 
 ## Step 1.6 Create a metadata file for your images
-Your image-data folder likely contains images of a control biological condition together with images from your experimental condition. You may also have multiple biological replicates or images from different biological conditions, such as developmental stages. You can use the database to help track where each image comes from -- is it an image of control condition or an experimental condition?
+**If you are analyzing our test dataset, then you can skip this step.**
+Your imaging experiment likely contains images of a control biological condition together with images from your experimental condition. You may also have multiple biological replicates or images from different biological conditions, such as developmental stages. You can use the database to help track where each image comes from -- is it an image of control condition or an experimental condition?
 
 You should store these data in a .csv file. We provide an example .csv file `raw-data-metadata.csv` with our sample dataset. You can create this file for your own experiment using Excel and then "Save As" .csv (you specifically want the "Comma Separated Values" file type and not the "CSV UTF-8" file type). The first row of your .csv file should contain labels that will become column names when you upload this data to postgres.
 
@@ -94,9 +93,43 @@ When you run the docker-compose logs command, you will see a printout to your te
 
 Copy-paste that link into a browser window, which will bring up the Jupyter notebook interface: ![jupyter-notebooks](jupyter-notebooks.png)
 
-You're now ready to start processing data using the SubcellularDistribution pipeline!
+You're now ready to start processing data using the SubcellularDistribution pipeline! Whenever you are done working with the pipeline, you can shut down the Docker system using:
+
+```bash
+docker-compose down
+```
 
 # 2. Segment images
+
+## Step 2.1 Copy data to Docker
+**If you are analyzing our test dataset, then you can skip this step.**
+The first step for this pipeline is to copy your images onto the Docker container where you will run the SubcellularDistribution pipeline code. In order to do this, first navigate to the image-data/ folder that you added your data to in Steps 1.5 and 1.6.
+
+```bash
+cd ~/Projects/subcellular-distribution-pipeline/jupyter/image-data/
+```
+
+Then, get the filepath for this folder using the `pwd` command:
+```bash
+pwd
+```
+
+Copy-paste this filepath to replace the `/Users/pearlryder/Projects/subcellular-distribution-pipeline/jupyter/image-data` path below:
+
+```bash
+docker cp /Users/pearlryder/Projects/subcellular-distribution-pipeline/jupyter/image-data/. jupyter:/data/
+```
+Running this command will copy any data in the image-data/ folder to your Docker container that runs the code. In order to check if the copy command worked as expected, you interactively interact with the Docker container using the terminal with the following commands. Don't copy the # sign or anything after it - those are just comments to help explain what each command does:
+
+```bash
+docker exec -it jupyter bash  # open an interactive shell with the Jupyter container running on Docker
+pwd # print working directory
+cd ../data/  # change the working directory to the /data/ folder
+ls # list the contents of the current working directory
+exit # exit out of the interactive shell
+```
+
+When you run the `ls` command above, you should see the data that you copied from your computer in the Docker container. You will also see the test data that is included in the pipeline app, in the folders "centrosomes" and "rna".
 
 ## Step 2.1 Segment images using the Allen Institute Cell Segmenter
 The first step for this pipeline is to create 3D segmentations of your data. We provide instructions below for using the Allen Institute Cell Segmenter to segment your images. If you have a preferred segmentation method, you can also segment your images outside of the pipeline and add them to a "segmentations" folder inside each "structure" folder in the image-data folder.
@@ -192,7 +225,7 @@ docker exec -it db psql -U username demo
 The `\dt` command will show you the tables contained in your database. You should see tables for each of your subcellular structures. From there, you can select some data from each structure table to verify that it was properly inserted:
 
 ```bash
-SELECT name, id, area from structure limit 20;
+SELECT name, id, area FROM structure limit 20;
 ```
 
 When you're done, you can exit out of this database connection using `exit`.
@@ -359,6 +392,9 @@ It's important to understand the fundamentals underlying image analysis. I recom
 ## Running Jupyter notebooks
 This beginner's guide may be helpful: [What is Jupyter?](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/what_is_jupyter.html)
 
+## Basics of Postgres SQL
+The SubcellularDistribution pipeline uses an SQL database to manage the data. You can learn more about using Postgres [here](https://www.postgresqltutorial.com/).  
+
 ## Useful Linux commands
 The [Software Carpentry](http://swcarpentry.github.io/shell-novice/) has a nice introduction to using the Unix shell that you may find helpful.
 ```bash
@@ -379,7 +415,7 @@ You can get more information about using Docker via their [official documentatio
 ```bash
 docker-compose up # start the Docker containers for the database and Jupyter notebooks
 Ctrl+C # exit out of a running process
-docker-compose down # stop all running images
+docker-compose down # stop all running containers
 docker cp source container_name:/destination # copy to docker container
 docker cp container:/source destination # copy from docker container
 docker system prune # remove all Docker containers, networks, and images that are not in use. Use with caution!
