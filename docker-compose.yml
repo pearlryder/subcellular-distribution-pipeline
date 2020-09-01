@@ -15,7 +15,6 @@ services:
   jupyter-server:
     image: "pearlryder/subcellular-distribution-pipeline:2020.08.29"
     container_name: "jupyter"
-    build: ./jupyter
     volumes:
       - "notebooks:/jupyter_notebooks"
       - "output:/output"
