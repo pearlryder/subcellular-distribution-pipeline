@@ -1,29 +1,42 @@
+# Preview
+Welcome to the SubcellularDistribution pipeline documentation! Please note: the bottom of this documentation file contains an Appendix with useful resources, including an introduction to image analysis, using the unix shell, and Docker commands. If you're unfamiliar with these concepts, you may want review the Appendix prior to starting.
+
 # 1. Software installation
+For Windows users, we recommend using Windows Powershell as your terminal program.
 
-## Step 1.1: Install Docker for your system
-The SubcellularDistribution pipeline is implemented using Docker in order to facilitate installation and reproducibility. Docker creates an isolated system on your computer, akin to a virtual machine. We provide instructions for Docker to recreate this container system across multiple different platforms. Instructions are provided on the Docker website for [Mac](https://docs.docker.com/docker-for-mac/install/) and [Windows](https://docs.docker.com/docker-for-windows/install/).
+As a general note, when we refer to a "directory", you can think of that as a folder on your operating system.w
 
-Since the Docker installation is a bit trickier on Windows, here we provide a brief overview of the steps required for installation on Windows 10:
-1. Open an Administrator Powershell window by pressing the Windows button + X, then selecting Windows Powershell (Admin) from the menu
-2. Enable Windows Subsytem for Linux WSL 1 using the following command:
-```bash
-dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-```
-3. Enable the "Virtual Machine Platform" feature:
-```bash
-dism.exe /online /enable-feature /feawsl --set-default-version 2turename:VirtualMachinePlatform /all /norestart
-```
-4. Restart your computer.
-5. Update to the Windows Subsystem for Linux 2 (WSL 2). Make sure that you're running the most up-to-date version of Windows available for your machine prior to trying this code. If you run into an error, you likely either need to update Windows or update your Linux kernel. See [this webpage](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for more info.
-```bash
-wsl --set-default-version 2
-```
-6. Download and install the [Windows installer](https://www.docker.com/get-started)
+## Step 1.1 Install the Fiji image viewer
+We use [Fiji](https://fiji.sc/) to open and view z-stack .tif images. We recommend that you download and install Fiji prior to starting this workflow.
+
+## Step 1.2: Install Docker for your system
+The SubcellularDistribution pipeline is implemented using Docker in order to facilitate installation and reproducibility. Docker creates an isolated operating system on your computer, akin to a virtual machine. These isolated environments are called containers. We provide instructions for Docker to recreate this container system across multiple different platforms. Instructions are provided on the Docker website for [Mac](https://docs.docker.com/docker-for-mac/install/) and [Windows](https://docs.docker.com/docker-for-windows/install/).
 
 Once you have installed Docker, you will need to start the application. Once you're on the home screen of the Docker app, we recommend adjusting the memory resources available to your Docker containers. This setting is available in the "Preferences" interface under "Resources". On the Windows Docker Desktop app, you can adjust this in the Advanced tab under "Settings". We suggest starting with a minimum of 5 GB of memory available.
 
+The Docker installation is a bit trickier on Windows. You will need to have  Windows Subsystem for Linux 2 (WSL 2) installed and an up-to-date installation of Windows. Here is a brief overview of the installation process on Windows 10:
+1. Open an Administrator Powershell window by pressing the Windows button + X, then selecting Windows Powershell (Admin) from the menu
+2. Check to see if you have WSL 2 installed by typing the following command and then looking for the version of the distribution (distro)
+```bash
+wsl --list --verbose
+```
+If WSL 2 is installed, you can proceed to download the installer [from Docker]((https://www.docker.com/get-started)). If not, you can install it using the following steps (see more at [the Microsoft documentation](https://docs.microsoft.com/en-us/windows/wsl/install-win10)).
+3. To install WSL 2, first enable Windows Subsystem for Linux WSL 1 using the following command:
+```bash
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+```
+4. Enable the "Virtual Machine Platform" feature:
+```bash
+dism.exe /online /enable-feature /feawsl --set-default-version 2turename:VirtualMachinePlatform /all /norestart
+```
+5. Restart your computer.
+6. Update to the Windows Subsystem for Linux 2 (WSL 2). Make sure that you're running the most up-to-date version of Windows available for your machine prior to trying this code. If you run into an error, you likely either need to update Windows or update your Linux kernel. See [this webpage](https://docs.microsoft.com/en-us/windows/wsl/install-win10) for more info.
+```bash
+wsl --set-default-version 2
+```
+7. Download and install the [Windows installer](https://www.docker.com/get-started)
 
-## Step 1.2: Test git and install if necessary
+## Step 1.3: Test git and install if necessary
 You will use git to download the SubcellularDistribution pipeline code from GitHub. In order to test if you have git installed already, open up a Windows Powershell or Mac terminal window and type:
 
 ```bash
@@ -32,14 +45,15 @@ git --version
 
 If you see an error message that you don't have git, follow the instructions to install it [here for Mac](https://www.atlassian.com/git/tutorials/install-git#mac-os-x) or [here for PC](https://www.atlassian.com/git/tutorials/install-git#windows).
 
-## Step 1.3: Download the SubcellularDistribution pipeline from GitHub
-First, you should create a folder to contain your projects. We recommend something like a Projects folder within your home directory. Once you have created this folder, navigate to it using the terminal as follows:
+## Step 1.4: Download the SubcellularDistribution pipeline from GitHub
+First, you should create a folder to contain your projects. We recommend something like a Projects folder within your home directory. You can use the commands below to make a Projects folder and navigate to it using the terminal:
 
 ```bash
+mkdir ~/Projects
 cd ~/Projects
 ```
 
-Note that if you are on a Windows machine, your filepaths will have a `C:/` instead of `~/`. However, you can type them in using "~" to represent the home foler. For simplicity, we will write commands in the following directions using the Unix form.
+Note that if you on a Windows machine using Powershell, your filepaths will appear different than the filepaths we show (e.g. `C:\Users\username` instead of `/Users/username`). However, you should be able to use the commands we provide in Powershell and they'll be interpreted correctly. For simplicity, we will write commands in the following directions using the unix form.
 
 Once you are in this directory, download the SubcellularDistribution pipeline code from GitHub using the command:
 
@@ -49,7 +63,7 @@ git clone https://github.com/pearlryder/subcellular-distribution-pipeline
 
 Now you can navigate into this window using ```cd subcellular-distribution-pipeline```. You can test if the files have downloaded using ```ls```. You should see a printout to your terminal like this: ![terminal-git-clone](git-clone-ls.png).
 
-## Step 1.4: Add data to the "image-data" folder
+## Step 1.5: Add data to the "image-data" folder
 If you would like to test the code using our test dataset, you can download the dataset at [FigShare](https://figshare.com/projects/SubcellularDistribution_pipeline/86732). You will need to download the "centrosomes" and "rna" folders as well as the "raw-data-metadata.csv" file located within the "Supporting data for SubcellularDistribution Pipeline" dataset.
 
 Note that you'll need to reorganize this data (detailed below), as FigShare does not allow us to share it with you in the nested folders required for the pipeline.
@@ -60,22 +74,23 @@ If you are analyzing your own data, then you can create folders to hold images f
 
 If you intend to use the provided Allen Institute Cell Segmenter method for 3D segmentation, then you are done (for those trying out the pipeline with our data, we do provide optimized segmentation workflows) However, you have an option to provide 3D segmentations that you have generated using another program. In that case, simply add a "segmentations" folder within each "structure" folder for these 3D segmented images.
 
-## Step 1.5 Create a metadata file for your images
-Your raw-data images folder likely contains images of a control biological condition together with images from your experimental condition. You may also have multiple biological replicates or images from different biological conditions, such as developmental stages. You can use the database to help track where each image comes from -- is it an image of control condition or an experimental condition?
+## Step 1.6 Create a metadata file for your images
+Your image-data folder likely contains images of a control biological condition together with images from your experimental condition. You may also have multiple biological replicates or images from different biological conditions, such as developmental stages. You can use the database to help track where each image comes from -- is it an image of control condition or an experimental condition?
 
 You should store these data in a .csv file. We provide an example .csv file `raw-data-metadata.csv` with our sample dataset. You can create this file for your own experiment using Excel and then "Save As" .csv (you specifically want the "Comma Separated Values" file type and not the "CSV UTF-8" file type). The first row of your .csv file should contain labels that will become column names when you upload this data to postgres.
 
 Add this raw-data-metadata.csv file to the image-data folder.
 
-## Step 1.6: Start the SubcellularDistribution pipeline using docker-compose
+## Step 1.7: Start the SubcellularDistribution pipeline using docker-compose
 
-Once again, open a terminal window. Navigate to the subcellular-distribution-pipeline folder that you created in Step 1.3 (`cd ~/Projects/subcellular-distribution-pipeline` on a Mac or `cd C:/Projects/subcellular-distribution-pipeline` on Windows). Ensure that you're in the expected folder using the command ```pwd``` (print working directory). Next, you can initialize the SubcellularDistribution pipeline app using the command:
+Once again, open a terminal window. Navigate to the subcellular-distribution-pipeline folder that you created in Step 1.3 (`cd ~/Projects/subcellular-distribution-pipeline`). Ensure that you're in the expected folder using the command ```pwd``` (print working directory). Next, you can initialize the SubcellularDistribution pipeline app using the command:
 
 ```bash
-docker-compose up
+docker-compose up -d
+docker-compose logs
 ```
 
-This command creates a Docker container for the database, a container for running Python code and Jupyter notebooks, and a network bridge between the two containers so that they can interact with each other. When you run the docker-compose up command, you will see a printout to your terminal that contains logs for the container running the Jupyter notebooks. This will include a website that you can copy-paste into your browser in order to access the Jupyter notebooks in your computer. For example, the link is the last line in this image: ![jupyter-link](jupyter-link.png).
+When you run the docker-compose logs command, you will see a printout to your terminal that contains logs for the container running the Jupyter notebooks. This will include a website that you can copy-paste into your browser in order to access the Jupyter notebooks in your computer. For example, the link is the last line in this image: ![jupyter-link](jupyter-link.png).
 
 Copy-paste that link into a browser window, which will bring up the Jupyter notebook interface: ![jupyter-notebooks](jupyter-notebooks.png)
 
@@ -86,7 +101,11 @@ You're now ready to start processing data using the SubcellularDistribution pipe
 ## Step 2.1 Segment images using the Allen Institute Cell Segmenter
 The first step for this pipeline is to create 3D segmentations of your data. We provide instructions below for using the Allen Institute Cell Segmenter to segment your images. If you have a preferred segmentation method, you can also segment your images outside of the pipeline and add them to a "segmentations" folder inside each "structure" folder in the image-data folder.
 
-For the purpose of this documentation, we'll walk through the process of segmenting the "rna" smFISH signals. The process is the same for segmenting the centrosome data in our test dataset, you'll just need to use the corresponding Jupyter notebooks. If you have a different structure, you can use the [lookup table](https://www.allencell.org/segmenter.html) provided by the Allen Institute to determine the best starting point for your segmentation. We have provided these playground lookup tables in the "all_structure_playgrounds" folder inside of the segmentation folder.
+We **highly recommend** watching the Allen Cell Segmenter team's [video tutorial](https://www.allencell.org/segmenter.html) to learn more about the workflow. You can also read about executing Jupyter notebooks [here](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/execute.html#executing-a-notebook). To understand the basics of the image segmentation process, we recommend [this video series](https://www.ibiology.org/techniques/bioimage-analysis/#part-1).
+
+In general, the approach of this segmentation workflow is to first figure out good parameters for segmentation using interactive "playground" notebooks. Once you've found a segmentation workflow that you're happy with, you can then use the "batch-segmentation" notebooks to process all of the images in your dataset.
+
+For the purpose of this documentation, we'll walk through the process of segmenting the "rna" smFISH signals. The process is the same for segmenting the centrosome data in our test dataset, you'll just need to use the corresponding Jupyter notebooks. If you have a different structure, you can use the [lookup table](https://www.allencell.org/segmenter.html) provided by the Allen Institute to determine the best playground notebook to use as a starting point for your segmentation. We have provided these playground lookup notebooks in the "all_structure_playgrounds" folder inside of the segmentation folder.
 
 In your browser with the Jupyter notebook interface, click on the "segmentation" folder. Then click on the playground_rna.ipynb Jupyter notebook to open it. Use the "Run" button to advance through each cell of the Jupyter notebook. These notebooks are interactive and allow you to visualize how each step of the workflow contributes to the final segmentation. We encourage you to adjust parameters and see how the output changes. For example, if the gaussian smoothing sigma starts at 1, try 0.1 and 5 to see how these changes affect the smoothing process. You can save final segmentations using the final cell. This code will save test segmentation files to an output folder in the home directory of the jupyter container.
 
@@ -113,11 +132,12 @@ If you changed the parameters in the Jupyter notebook for RNA segmentation, then
 Once you've updated your batch-rna-segmentation.ipynb code, execute each cell in the notebook using the Run button. You'll see a status message printed as each image segmentation is started. This notebook will save these images to a "segmentations" folder inside of the "image-data" folder. You can use the following Docker cp command to move the segmentation files outside of Docker, in order to inspect them against your data:
 
 ```bash
-docker cp jupyter://data/rna/segmentations ~/Projects/subcellular-distribution-pipeline/rna/
+docker cp jupyter:/data/rna/segmentations ~/Projects/subcellular-distribution-pipeline/rna/
 ```
 
-Once you're satisfied with the segmentations for your smFISH signal, you'll want to repeat the same process for your other structures of interest. If you're using our test-data to learn the workflow, you can repeat the steps above using the playground_centrosomes.ipynb and batch-centrosome-segmentation Jupyter notebooks. If you have other structures of interest, you can use the Allen Cell Segmenter [lookup table](https://www.allencell.org/segmenter.html) to identify a starting point for your segmentation workflow. We've provided the Allen Cell Segmenter playgrounds in the "all_structure_playgrounds" folder. Once you've optimized the workflow, you can duplicate the "batch-template-segmentation.ipynb" notebook and then copy-paste your segmentation workflow into that notebook. This process should allow you to segment most subcellular structures of interest.
+Once you're satisfied with the segmentations for your smFISH signal, you'll want to repeat the same process for your other structures of interest. If you're using our test image-data to learn the workflow, you can repeat the steps above using the playground_centrosomes.ipynb and batch-centrosome-segmentation Jupyter notebooks.
 
+If you have other structures of interest, you can use the Allen Cell Segmenter [lookup table](https://www.allencell.org/segmenter.html) to identify a starting point for your segmentation workflow. We've provided the Allen Cell Segmenter playgrounds in the "all_structure_playgrounds" folder. Once you've optimized the workflow, you can duplicate the "batch-template-segmentation.ipynb" notebook and then copy-paste your segmentation workflow into that notebook. This process should allow you to segment most subcellular structures of interest.
 
 # 3. Process data using the SubcellularDistribution pipeline
 Once you're satisfied with the segmentation process and you've run the batch processing notebooks, you're ready to process the data using the SubcellularDistribution pipeline. Navigate to the "pipeline" folder (look for a small blue folder icon to click on the top left of the gray toolbar on the Jupyter notebook interface). Now open the pipeline.ipynb notebook.
@@ -125,7 +145,7 @@ Once you're satisfied with the segmentation process and you've run the batch pro
 ## Step 3.1 Update parameters in cell 1
 The first step for this pipeline is to update your parameters. You can choose a name for your database.
 
-Next, you can update the path to the raw data and segmented images, if you've changed those (we recommend sticking to our defaults). You can also update the names of the folders that contain raw-data and segmentated images.
+Next, you can update the path to the raw data and segmented images, if you've changed those (we recommend sticking to our defaults). You can also update the names of the folders that contain raw-data and segmented images.
 
 You'll need to change the list of structures to match your experiment. For example, if you have an experiment with nuclei, myosin, and lysosomes, you would update the structures variable to:
 
@@ -330,9 +350,14 @@ gunzip < demo.gz | psql test username
 exit
 ```
 
+# Appendix: Useful resources
+Using the SubcellularDistribution pipeline requires some interaction with your operating system via the terminal. Here are a few resources and commands that you may find helpful.
 
-# Appendix: Useful commands
-Using the SubcellularDistribution pipeline requires some interaction with your operating system via the terminal. Here are a few useful commands that you may find helpful.
+## Basics of image analysis
+It's important to understand the fundamentals underlying image analysis. I recommend this series of talks on iBiology from Anne Carpenter (of CellProfiler) and Kevin Eliceiri (of ImageJ): [the Basics of Bioimage Analysis](https://www.ibiology.org/techniques/bioimage-analysis/)
+
+## Running Jupyter notebooks
+This beginner's guide may be helpful: [What is Jupyter?](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/what_is_jupyter.html)
 
 ## Useful Linux commands
 The [Software Carpentry](http://swcarpentry.github.io/shell-novice/) has a nice introduction to using the Unix shell that you may find helpful.
