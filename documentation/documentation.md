@@ -10,7 +10,7 @@ As a general note, when we refer to a "directory", you can think of that as a fo
 We use [Fiji](https://fiji.sc/) to open and view z-stack .tif images. We recommend that you download and install Fiji prior to starting this workflow.
 
 ## Step 1.2: Install Docker for your system
-The SubcellularDistribution pipeline is implemented using Docker in order to facilitate installation and reproducibility. Docker creates an isolated operating system on your computer, akin to a virtual machine. These isolated environments are called containers. We provide instructions for Docker to recreate this container system across multiple different platforms. Instructions are provided on the Docker website for [Mac](https://docs.docker.com/docker-for-mac/install/) and [Windows](https://docs.docker.com/docker-for-windows/install/).
+The SubcellularDistribution pipeline is implemented using Docker in order to facilitate installation and reproducibility. Docker creates an isolated operating system on your computer that only it controls. These isolated environments are called containers. You can think of these containers as virtual machines that you connect to from your computer. We provide instructions for Docker to recreate this container system across multiple different platforms. Instructions are provided on the Docker website for [Mac](https://docs.docker.com/docker-for-mac/install/) and [Windows](https://docs.docker.com/docker-for-windows/install/).
 
 Once you have installed Docker, you will need to start the application. For those on a Mac, we recommend adjusting the memory resources available to your Docker containers. This setting is available in the "Preferences" interface under "Resources". We recommend starting with 5 GB of memory available. You can also adjust the number of CPUs available in the same interface.
 
@@ -93,6 +93,8 @@ When you run the docker-compose logs command, you will see a printout to your te
 
 Copy-paste that link into a browser window, which will bring up the Jupyter notebook interface: ![jupyter-notebooks](jupyter-notebooks.png)
 
+**Using Jupyter notebooks**: If you have never used Jupyter notebooks before, we recommend opening one of the notebooks (.ipynb files) in either the "pipeline" or "segmentation" folder, then selecting the User Interface tour from the Help menu to get oriented. When you're done with the notebook, select "File" > "Close and Halt". In general, each "cell" of a notebook contains either Python code (light gray background) or explanatory text (white background). You can run a cell using the "Run" button. The notebook is interactive, and will often print out a response or show an image / plot just below each cell. Other times the cell will run and you'll see the brackets to the top left corner of the notebook update with a number to show you the order in which cells have be executed.
+
 You're now ready to start processing data using the SubcellularDistribution pipeline! Whenever you are done working with the pipeline, you can shut down the Docker system using:
 
 ```bash
@@ -114,10 +116,10 @@ Then, get the filepath for this folder using the `pwd` command:
 pwd
 ```
 
-Copy-paste this filepath to replace the `/Users/pearlryder/Projects/subcellular-distribution-pipeline/jupyter/image-data` path below:
+Copy-paste this filepath to replace the `/Users/username/Projects/subcellular-distribution-pipeline/jupyter/image-data` path below:
 
 ```bash
-docker cp /Users/pearlryder/Projects/subcellular-distribution-pipeline/jupyter/image-data/. jupyter:/data/
+docker cp /Users/username/Projects/subcellular-distribution-pipeline/jupyter/image-data/. jupyter:/data/
 ```
 Running this command will copy any data in the image-data/ folder to your Docker container that runs the code. In order to check if the copy command worked as expected, you interactively interact with the Docker container using the terminal with the following commands. Don't copy the # sign or anything after it - those are just comments to help explain what each command does:
 
@@ -131,7 +133,7 @@ exit # exit out of the interactive shell
 
 When you run the `ls` command above, you should see the data that you copied from your computer in the Docker container. You will also see the test data that is included in the pipeline app, in the folders "centrosomes" and "rna".
 
-## Step 2.1 Segment images using the Allen Institute Cell Segmenter
+## Step 2.2 Segment images using the Allen Institute Cell Segmenter
 The first step for this pipeline is to create 3D segmentations of your data. We provide instructions below for using the Allen Institute Cell Segmenter to segment your images. If you have a preferred segmentation method, you can also segment your images outside of the pipeline and add them to a "segmentations" folder inside each "structure" folder in the image-data folder.
 
 We **highly recommend** watching the Allen Cell Segmenter team's [video tutorial](https://www.allencell.org/segmenter.html) to learn more about the workflow. You can also read about executing Jupyter notebooks [here](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/execute.html#executing-a-notebook). To understand the basics of the image segmentation process, we recommend [this video series](https://www.ibiology.org/techniques/bioimage-analysis/#part-1).
@@ -157,10 +159,10 @@ Note that no segmentation process will ever be perfect. We refer you to this [ex
 
 Continue this process until you're satisfied with the segmentation process. We recommend walking through at least two images from each biological condition to test your workflow before moving to the next step - batch processing.
 
-## Step 2.2 Batch process image segmentation
+## Step 2.3 Batch process image segmentation
 Once we're satisfied with the segmentation workflow, we use Jupyter notebooks to execute batch processing on all of the images for a given structure. We encourage you to then review the results of that segmentation for each image in Fiji (or a representative subset of your images if your dataset is really big).
 
-If you changed the parameters in the Jupyter notebook for RNA segmentation, then you'll first want to update the batch processing function in the "batch-rna-segmentation.ipynb" notebook. Update the code using copy-paste so that the pre-processing, processing, and post-processing steps reflect the workflow you optimized in step 2.1.
+If you changed the parameters in the Jupyter notebook for RNA segmentation, then you'll first want to update the batch processing function in the "batch-rna-segmentation.ipynb" notebook. Update the code using copy-paste so that the pre-processing, processing, and post-processing steps reflect the workflow you optimized in step 2.2.
 
 Once you've updated your batch-rna-segmentation.ipynb code, execute each cell in the notebook using the Run button. You'll see a status message printed as each image segmentation is started. This notebook will save these images to a "segmentations" folder inside of the "image-data" folder. You can use the following Docker cp command to move the segmentation files outside of Docker, in order to inspect them against your data:
 
@@ -252,6 +254,14 @@ SELECT name, distance_to_centrosomes, centrosomes_id from rna limit 5;
 You should see two new empty columns ready to accept your distance and structure_2_id data.
 
 Once you've verified that the database is ready to accept distance measurements data, run the next cell to measure distances between the two subcellular structures. Our test dataset of 20 images takes about 9 hours to run on a MacBook Pro with a 12-core processor using parallel processing. If the processing time is too slow on your computer, then processing on a virtual machine using Amazon Web Services may be an option you want to explore.
+
+In order to monitor the progress of the distance measurements, you can interact with the database and use the following commands. Be sure to update structure_1 and structure_2 w/ the relevant structure names:
+
+```bash
+docker exec -it db psql -U username demo
+SELECT COUNT (*) FROM structure_1 WHERE distance_to_structure_2 IS NULL; # get the count of structure_1 objects that need to be processed
+SELECT COUNT (*) FROM structure_1 WHERE distance_to_structure_2 IS NOT NULL; # get the count of structure_1 objects that have been processed
+```
 
 ## Step 3.5 Create an images table
 In the parameters cell of this section, you can update the directory that contains your metadata file and the name of the file. If you placed this file in the "image-data" folder, then you shouldn't need to change the directory.
@@ -393,7 +403,10 @@ It's important to understand the fundamentals underlying image analysis. I recom
 This beginner's guide may be helpful: [What is Jupyter?](https://jupyter-notebook-beginner-guide.readthedocs.io/en/latest/what_is_jupyter.html)
 
 ## Basics of Postgres SQL
-The SubcellularDistribution pipeline uses an SQL database to manage the data. You can learn more about using Postgres [here](https://www.postgresqltutorial.com/).  
+The SubcellularDistribution pipeline uses an SQL database to manage the data. You can learn more about using Postgres [at PostgresTutorial](https://www.postgresqltutorial.com/). There are interactive tutorials available at [SQLZoo](https://sqlzoo.net/wiki/SQL_Tutorial)
+
+## An introduction to Python
+We have found this [Google Python class](https://developers.google.com/edu/python/?csw=1). While this course covers Python 2 and the pipeline is written in Python 3, the differences are mostly trivial and the course provides a very useful introduction.
 
 ## Useful Linux commands
 The [Software Carpentry](http://swcarpentry.github.io/shell-novice/) has a nice introduction to using the Unix shell that you may find helpful.
