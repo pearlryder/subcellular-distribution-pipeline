@@ -228,7 +228,18 @@ The `\dt` command will show you the tables contained in your database. You shoul
 
 ```bash
 SELECT name, id, area FROM structure limit 20;
+exit
 ```
+
+Before you begin measuring distances, it's a good idea to make sure that you've segmented structures from all of the same images into your structure tables. If you haven't, you'll get error messages when you try to measure the distances from structure_1 to structure_2 (if no structure_2 file has been segmented for a given image, then there's nothing to measure distances between!). You can run these commands to find out if any of your structure tables are missing data. Be sure to replace the structure_1 and structure_2 placeholders with your structure names:
+
+```bash
+docker exec -it db psql -U username demo
+SELECT DISTINCT name FROM structure_1 WHERE name NOT IN (SELECT DISTINCT name FROM structure_2); # get names of images that have a structure_1 file processed but not  structure_2 file
+SELECT DISTINCT name FROM structure_2 WHERE name NOT IN (SELECT DISTINCT name FROM structure_1); # get names of images that have a structure_2 file processed but not  structure_1 file
+exit
+```
+If either of these queries report out names, you'll want to check your image data to make sure that your raw-data folders contain images for both structure_1 and structure_2 and that all of the images in your raw-data folders have been segmented.
 
 When you're done, you can exit out of this database connection using `exit`.
 
