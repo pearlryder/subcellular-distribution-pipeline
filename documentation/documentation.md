@@ -68,7 +68,7 @@ If you would like to test the code using our test dataset, the data is already i
 
 If you would like to analyze your own data, you will need to organize it as follows.
 
-The SubcellularDistribution pipeline works on single channel .tif files that represent subcellular structures from the same multichannel microscopy image. For example, you may have captured an image that has three channels: nuclei, centrosomes, and RNA. You should split this image into its component single channel .tif files. These .tif files should be added to separate "raw-data" folders inside of a folder named for each subcellular structure. The different channels from one original image should all have the same name so that the pipeline can find the structures from the same image. 
+The SubcellularDistribution pipeline works on single channel .tif files that represent subcellular structures from the same multichannel microscopy image. For example, you may have captured an image that has three channels: nuclei, centrosomes, and RNA. You should split this image into its component single channel .tif files. These .tif files should be added to separate "raw-data" folders inside of a folder named for each subcellular structure. The different channels from one original image should all have the same name so that the pipeline can find the structures from the same image.
 
 Open the "jupyter" folder and then the "image-data" folder. Create empty folders inside the image-data folder named for the structures that you want to analyze. Within these folders, add a "raw-data" folder holding single channel .tif files for that structure. In general, avoid naming structures with upper-case letters, numbers, or special characters - these don't play well with the database that you'll use later. When you're done, the folder structure in your image-data folder should look like this (although the names of the structures will be different): ![image-data-folder-structure.png](image-data-folder-structure.png).
 
@@ -360,6 +360,7 @@ Since we've used Docker to distribute this pipeline, much of your work has been 
 It's a good idea to keep your segmentation files, because they are a crucial part of the image analysis process. Here, we're moving it to an image-data folder within your subcellular-distribution-pipeline master folder:
 
 ```bash
+# remember, those on Windows may need to convert the ~/Projects filepath to the C:\ form
 docker cp jupyter:/data/ ~/Projects/subcellular-distribution-pipeline/image-data/
 ```
 
@@ -382,27 +383,32 @@ We use the postgres
 [pg_dump utility](https://www.postgresql.org/docs/9.1/app-pgdump.html) to back up the database. As a default, our directions compress the backup file using [gzip](https://www.gzip.org/). First, navigate to the folder where you'd like your database backups to be stored.
 
 ```bash
-cd ~/Projects/subcellular-distribution-pipeline/output/db_backups # for Mac
+cd ~/Projects/subcellular-distribution-pipeline/output/db_backups
 ```
 
 Then run the pg_dump utility in your Docker db container:
 
 ```bash
-docker exec db /usr/bin/pg_dump demo -U username | gzip > demo.gz
+docker exec db /usr/bin/pg_dump demo -U username | gzip > demo.gz # for Mac
+docker exec db /usr/bin/pg_dump demo -U username > demo.sql # for Windows
 ```
 
 In general, this command takes the form:
 ```bash
-docker exec db /usr/bin/pg_dump [DATABASE_NAME] -U username | gzip > [FILENAME].gz
+docker exec db /usr/bin/pg_dump [DATABASE_NAME] -U username | gzip > [FILENAME].gz # for Mac
+docker exec db /usr/bin/pg_dump [DATABASE_NAME] -U username > [FILENAME].sql # for Windows
+
 ```
 
 If you want to restore a database from a file into your Docker container, you can use the following commands to first copy your database backup file to the db container. You then open an interactive connection to the db container to create a new database for the data and unzip the backup.
 
 ```bash
-docker cp ~/Projects/subcellular-distribution-pipeline/output/db_backups/demo.gz db:/demo.gz
+docker cp ~/Projects/subcellular-distribution-pipeline/output/db_backups/demo.gz db:/demo.gz # for Mac
+docker cp ~/Projects/subcellular-distribution-pipeline/output/db_backups/demo.sql db:/demo.sql # for Windows
 docker exec -it db bash
 createdb test -U username
-gunzip < demo.gz | psql test username
+gunzip < demo.gz | psql test username # for Mac
+demo.sql | psql test username # for Windows
 exit
 ```
 
