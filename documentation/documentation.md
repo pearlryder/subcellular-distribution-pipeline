@@ -4,7 +4,7 @@ Welcome to the SubcellularDistribution pipeline documentation! Please note: the 
 # 1. Software installation
 For Windows users, we recommend using Windows Powershell as your terminal program.
 
-As a general note, when we refer to a "directory", you can think of that as a folder on your operating system.w
+As a general note, when we refer to a "directory", you can think of that as a folder on your operating system.
 
 ## Step 1.1 Install the Fiji image viewer
 We use [Fiji](https://fiji.sc/) to open and view z-stack .tif images. We recommend that you download and install Fiji prior to starting this workflow.
