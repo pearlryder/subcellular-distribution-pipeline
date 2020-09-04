@@ -380,13 +380,13 @@ docker cp jupyter:/jupyter_notebooks/ ~/Projects/subcellular-distribution-pipeli
 
 ## Step 4.4 Export your database
 We use the postgres
-[pg_dump utility](https://www.postgresql.org/docs/9.1/app-pgdump.html) to back up the database. As a default, our directions compress the backup file using [gzip](https://www.gzip.org/). First, navigate to the folder where you'd like your database backups to be stored.
+[pg_dump utility](https://www.postgresql.org/docs/9.1/app-pgdump.html) to back up the database. As a default, our directions compress the backup file using [gzip](https://www.gzip.org/) for Mac systems. First, navigate to the folder where you'd like your database backups to be stored.
 
 ```bash
 cd ~/Projects/subcellular-distribution-pipeline/output/db_backups
 ```
 
-Then run the pg_dump utility in your Docker db container:
+Then run the pg_dump utility in your Docker db container. Note, this may take up several minutes (~30) to complete:
 
 ```bash
 docker exec db /usr/bin/pg_dump demo -U username | gzip > demo.gz # for Mac
