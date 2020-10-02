@@ -107,7 +107,15 @@ docker-compose down
 
 ## Step 2.1 Copy data to Docker
 **If you are analyzing our test dataset, then you can skip this step.**
-The first step for this pipeline is to copy your images onto the Docker container where you will run the SubcellularDistribution pipeline code. In order to do this, first navigate to the image-data/ folder that you added your data to in Steps 1.5 and 1.6.
+The first step for this pipeline is to copy your images onto the Docker container where you will run the SubcellularDistribution pipeline code. In order to do this, first delete the data that comes pre-packaged in the Subcellular Distribution pipeline from Docker. By doing this, you won't re-process our test dataset.
+
+```bash
+docker exec -it jupyter bash  # open an interactive shell with the Jupyter container running on Docker
+rm -r /data/ # delete the data folder and everything it contains
+mkdir /data/ # make a new data folder
+```
+
+Next navigate to the image-data/ folder that you added your data to in Steps 1.5 and 1.6.
 
 ```bash
 cd ~/Projects/subcellular-distribution-pipeline/jupyter/image-data/
